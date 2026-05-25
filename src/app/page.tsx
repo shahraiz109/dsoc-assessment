@@ -2,30 +2,74 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
-import type { RepoReference } from "../lib/repoInput";
 import { validateRepoInput } from "../lib/repoInput";
 import styles from "./page.module.css";
 
-export default function Home() {
-  const [input, setInput] = useState(
-    "vercel/next.js\nfacebook/react\nhttps://github.com/nodejs/node",
-  );
-  const [error, setError] = useState("");
-  const [repos, setRepos] = useState<RepoReference[]>([]);
+type RepoResult =
+  | {
+      ok: true;
+      label: string;
+      url: string;
+      description: string | null;
+      stars: number;
+      forks: number;
+      openIssues: number;
+      watchers: number;
+      language: string | null;
+      updatedAt: string;
+      pushedAt: string | null;
+    }
+  | {
+      ok: false;
+      label: string;
+      message: string;
+    };
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+export default function Home() {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+  const [results, setResults] = useState<RepoResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const result = validateRepoInput(input);
 
     if (!result.ok) {
-      setRepos([]);
+      setResults([]);
       setError(result.message);
       return;
     }
 
+    setIsLoading(true);
     setError("");
-    setRepos(result.repos);
+    setResults([]);
+
+    try {
+      const response = await fetch("/api/repos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ input }),
+      });
+      const data = (await response.json()) as {
+        message?: string;
+        results?: RepoResult[];
+      };
+
+      if (!response.ok) {
+        setError(data.message ?? "Could not compare those repositories.");
+        return;
+      }
+
+      setResults(data.results ?? []);
+    } catch {
+      setError("The app could not reach its API. Try again in a moment.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -48,7 +92,7 @@ export default function Home() {
               separate them with commas.
             </p>
           </div>
-          <span className={styles.badge}>Bad input handled</span>
+          <span className={styles.badge}>GitHub API connected</span>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -59,6 +103,7 @@ export default function Home() {
             onChange={(event) => setInput(event.target.value)}
             rows={6}
             spellCheck={false}
+            placeholder={"Paste 2 to 5 GitHub repos to compare, one per line.\n\nvercel/next.js\nfacebook/react\nhttps://github.com/nodejs/node"}
           />
           <p className={styles.helpText}>
             Examples: <code>vercel/next.js</code>, <code>facebook/react</code>,
@@ -71,25 +116,70 @@ export default function Home() {
             </p>
           ) : null}
 
-          <button type="submit">Validate repositories</button>
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? "Comparing..." : "Compare repositories"}
+          </button>
         </form>
 
-        {repos.length > 0 ? (
+        {results.length > 0 ? (
           <div className={styles.preview}>
-            <h3>Ready to compare</h3>
-            <ul>
-              {repos.map((repo) => (
-                <li key={repo.label}>
-                  <span>{repo.label}</span>
-                  <small>
-                    owner: {repo.owner}, repo: {repo.repo}
-                  </small>
-                </li>
-              ))}
-            </ul>
+            <h3>Repository results</h3>
+            <div className={styles.resultsGrid}>
+              {results.map((repo) =>
+                repo.ok ? (
+                  <article className={styles.repoCard} key={repo.label}>
+                    <div>
+                      <a href={repo.url} rel="noreferrer" target="_blank">
+                        {repo.label}
+                      </a>
+                      <p>{repo.description ?? "No description provided."}</p>
+                    </div>
+
+                    <dl>
+                      <div>
+                        <dt>Stars</dt>
+                        <dd>{formatNumber(repo.stars)}</dd>
+                      </div>
+                      <div>
+                        <dt>Forks</dt>
+                        <dd>{formatNumber(repo.forks)}</dd>
+                      </div>
+                      <div>
+                        <dt>Open issues</dt>
+                        <dd>{formatNumber(repo.openIssues)}</dd>
+                      </div>
+                      <div>
+                        <dt>Language</dt>
+                        <dd>{repo.language ?? "Unknown"}</dd>
+                      </div>
+                    </dl>
+
+                    <small>Last updated {formatDate(repo.updatedAt)}</small>
+                  </article>
+                ) : (
+                  <article
+                    className={`${styles.repoCard} ${styles.repoError}`}
+                    key={repo.label}
+                  >
+                    <strong>{repo.label}</strong>
+                    <p>{repo.message}</p>
+                  </article>
+                ),
+              )}
+            </div>
           </div>
         ) : null}
       </section>
     </main>
   );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en").format(value);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+  }).format(new Date(value));
 }

@@ -92,6 +92,11 @@
   outline: 3px solid color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
+.form textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
 .helpText {
   font-size: 0.95rem;
 }
@@ -123,35 +128,71 @@
   background: #7dd3fc;
 }
 
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .preview {
   border-top: 1px solid var(--border);
   margin-top: 1.5rem;
   padding-top: 1.5rem;
 }
 
-.preview ul {
+.resultsGrid {
   display: grid;
-  gap: 0.75rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.preview li {
+.repoCard {
   background: color-mix(in srgb, var(--panel-soft) 70%, transparent);
   border: 1px solid var(--border);
-  border-radius: 0.8rem;
+  border-radius: 1rem;
   display: grid;
-  gap: 0.25rem;
-  padding: 0.85rem 1rem;
+  gap: 1rem;
+  padding: 1rem;
 }
 
-.preview span {
+.repoCard a,
+.repoCard strong {
+  color: var(--text);
   font-weight: 700;
+  text-decoration: none;
+}
+
+.repoCard a:hover {
+  color: var(--accent);
+}
+
+.repoCard dl {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.repoCard div {
+  min-width: 0;
+}
+
+.repoCard dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.repoCard dd {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0.2rem 0 0;
 }
 
 .preview small {
   color: var(--muted);
+}
+
+.repoError {
+  border-color: color-mix(in srgb, #ef4444 50%, var(--border));
 }
 
 @media (max-width: 640px) {
