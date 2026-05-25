@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { validateRepoInput } from "../lib/repoInput";
 import styles from "./page.module.css";
 
@@ -33,6 +33,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [results, setResults] = useState<RepoResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const requestRef = useRef<AbortController | null>(null);
   const summary = getSummary(results);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -46,6 +47,10 @@ export default function Home() {
       return;
     }
 
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+
     setIsLoading(true);
     setError("");
     setResults([]);
@@ -57,6 +62,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ input }),
+        signal: controller.signal,
       });
       const data = (await response.json()) as {
         message?: string;
@@ -69,10 +75,17 @@ export default function Home() {
       }
 
       setResults(data.results ?? []);
-    } catch {
+    } catch (fetchError) {
+      if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
+        return;
+      }
+
       setError("The app could not reach its API. Try again in a moment.");
     } finally {
-      setIsLoading(false);
+      if (requestRef.current === controller) {
+        setIsLoading(false);
+        requestRef.current = null;
+      }
     }
   }
 
@@ -96,7 +109,7 @@ export default function Home() {
               separate them with commas.
             </p>
           </div>
-          <span className={styles.badge}>GitHub API connected</span>
+          <span className={styles.badge}>Live GitHub comparison</span>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -124,6 +137,19 @@ export default function Home() {
             {isLoading ? "Comparing..." : "Compare repositories"}
           </button>
         </form>
+
+        {!isLoading && results.length === 0 && !error ? (
+          <section className={styles.emptyState} aria-label="How this tool helps">
+            <h3>Compare repos without opening five GitHub tabs</h3>
+            <p>
+              Paste a few public repositories and this tool will fetch the live
+              data, score each repo, sort the strongest options first, and call
+              out any repositories that could not be loaded.
+            </p>
+          </section>
+        ) : null}
+
+        {isLoading ? <LoadingResults /> : null}
 
         {results.length > 0 ? (
           <div className={styles.preview}>
@@ -226,6 +252,23 @@ export default function Home() {
         ) : null}
       </section>
     </main>
+  );
+}
+
+function LoadingResults() {
+  return (
+    <section className={styles.loadingState} aria-label="Loading comparison">
+      <div className={styles.skeletonHeader} />
+      <div className={styles.skeletonGrid}>
+        {[0, 1, 2].map((item) => (
+          <div className={styles.skeletonCard} key={item}>
+            <span />
+            <span />
+            <span />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

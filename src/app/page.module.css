@@ -133,6 +133,82 @@
   opacity: 0.65;
 }
 
+.emptyState,
+.loadingState {
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.emptyState {
+  background: color-mix(in srgb, var(--panel-soft) 36%, transparent);
+  border: 1px dashed var(--border);
+  border-radius: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+}
+
+.emptyState h3 {
+  margin: 0 0 0.6rem;
+}
+
+.emptyState p {
+  max-width: 720px;
+}
+
+.skeletonHeader,
+.skeletonCard {
+  animation: pulse 1.3s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--panel-soft) 76%, transparent),
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    color-mix(in srgb, var(--panel-soft) 76%, transparent)
+  );
+  background-size: 220% 100%;
+}
+
+.skeletonHeader {
+  border-radius: 999px;
+  height: 1.4rem;
+  margin-bottom: 1rem;
+  max-width: 22rem;
+}
+
+.skeletonGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.skeletonCard {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.skeletonCard span {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 999px;
+  display: block;
+  height: 0.8rem;
+}
+
+.skeletonCard span:first-child {
+  height: 1rem;
+  width: 68%;
+}
+
+.skeletonCard span:nth-child(2) {
+  width: 100%;
+}
+
+.skeletonCard span:last-child {
+  width: 45%;
+}
+
 .preview {
   border-top: 1px solid var(--border);
   margin-top: 1.5rem;
@@ -268,5 +344,15 @@
 @media (max-width: 640px) {
   .cardHeader {
     display: grid;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
   }
 }
