@@ -33,6 +33,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [results, setResults] = useState<RepoResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const summary = getSummary(results);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,6 +131,42 @@ export default function Home() {
             <p className={styles.resultHint}>
               Sorted by health score so the strongest repo appears first.
             </p>
+
+            {summary ? (
+              <section className={styles.summary} aria-label="Comparison summary">
+                <div>
+                  <span>Best overall</span>
+                  <strong>{summary.bestOverall.label}</strong>
+                  <small>
+                    {summary.bestOverall.healthScore}/100 health score
+                  </small>
+                </div>
+                <div>
+                  <span>Most stars</span>
+                  <strong>{summary.mostStars.label}</strong>
+                  <small>{formatNumber(summary.mostStars.stars)} stars</small>
+                </div>
+                <div>
+                  <span>Fewest open issues</span>
+                  <strong>{summary.fewestIssues.label}</strong>
+                  <small>
+                    {formatNumber(summary.fewestIssues.openIssues)} open issues
+                  </small>
+                </div>
+                <div>
+                  <span>Loaded</span>
+                  <strong>
+                    {summary.successCount}/{summary.totalCount}
+                  </strong>
+                  <small>
+                    {summary.failedCount === 0
+                      ? "All repositories loaded."
+                      : `${summary.failedCount} failed to load.`}
+                  </small>
+                </div>
+              </section>
+            ) : null}
+
             <div className={styles.resultsGrid}>
               {results.map((repo) =>
                 repo.ok ? (
@@ -200,4 +237,24 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
   }).format(new Date(value));
+}
+
+function getSummary(results: RepoResult[]) {
+  const successful = results.filter((repo) => repo.ok);
+
+  if (successful.length === 0) {
+    return null;
+  }
+
+  const byStars = [...successful].sort((a, b) => b.stars - a.stars);
+  const byIssues = [...successful].sort((a, b) => a.openIssues - b.openIssues);
+
+  return {
+    bestOverall: successful[0],
+    mostStars: byStars[0],
+    fewestIssues: byIssues[0],
+    successCount: successful.length,
+    failedCount: results.length - successful.length,
+    totalCount: results.length,
+  };
 }

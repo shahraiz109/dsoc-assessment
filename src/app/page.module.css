@@ -143,6 +143,33 @@
   margin: -0.3rem 0 1rem !important;
 }
 
+.summary {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.summary div {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem;
+}
+
+.summary span,
+.summary small {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.summary strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .resultsGrid {
   display: grid;
   gap: 1rem;
