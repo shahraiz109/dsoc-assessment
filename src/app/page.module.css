@@ -139,6 +139,10 @@
   padding-top: 1.5rem;
 }
 
+.resultHint {
+  margin: -0.3rem 0 1rem !important;
+}
+
 .resultsGrid {
   display: grid;
   gap: 1rem;
@@ -152,6 +156,13 @@
   display: grid;
   gap: 1rem;
   padding: 1rem;
+}
+
+.repoTopLine {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
 }
 
 .repoCard a,
@@ -185,6 +196,38 @@
   font-size: 1.1rem;
   font-weight: 800;
   margin: 0.2rem 0 0;
+}
+
+.scoreBadge {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 0.9rem;
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  min-width: 4.5rem;
+  padding: 0.55rem;
+}
+
+.scoreBadge strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.scoreBadge span {
+  color: #bae6fd;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.healthNotes {
+  color: var(--muted);
+  display: grid;
+  gap: 0.45rem;
+  line-height: 1.45;
+  margin: 0;
+  padding-left: 1.1rem;
 }
 
 .preview small {

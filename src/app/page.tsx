@@ -18,6 +18,9 @@ type RepoResult =
       language: string | null;
       updatedAt: string;
       pushedAt: string | null;
+      healthScore: number;
+      healthLabel: string;
+      healthNotes: string[];
     }
   | {
       ok: false;
@@ -124,15 +127,24 @@ export default function Home() {
         {results.length > 0 ? (
           <div className={styles.preview}>
             <h3>Repository results</h3>
+            <p className={styles.resultHint}>
+              Sorted by health score so the strongest repo appears first.
+            </p>
             <div className={styles.resultsGrid}>
               {results.map((repo) =>
                 repo.ok ? (
                   <article className={styles.repoCard} key={repo.label}>
-                    <div>
-                      <a href={repo.url} rel="noreferrer" target="_blank">
-                        {repo.label}
-                      </a>
-                      <p>{repo.description ?? "No description provided."}</p>
+                    <div className={styles.repoTopLine}>
+                      <div>
+                        <a href={repo.url} rel="noreferrer" target="_blank">
+                          {repo.label}
+                        </a>
+                        <p>{repo.description ?? "No description provided."}</p>
+                      </div>
+                      <div className={styles.scoreBadge}>
+                        <strong>{repo.healthScore}</strong>
+                        <span>{repo.healthLabel}</span>
+                      </div>
                     </div>
 
                     <dl>
@@ -153,6 +165,12 @@ export default function Home() {
                         <dd>{repo.language ?? "Unknown"}</dd>
                       </div>
                     </dl>
+
+                    <ul className={styles.healthNotes}>
+                      {repo.healthNotes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
 
                     <small>Last updated {formatDate(repo.updatedAt)}</small>
                   </article>

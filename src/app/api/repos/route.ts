@@ -27,6 +27,9 @@ type RepoSuccess = {
   language: string | null;
   updatedAt: string;
   pushedAt: string | null;
+  healthScore: number;
+  healthLabel: string;
+  healthNotes: string[];
 };
 
 type RepoFailure = {
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
 
   const results = await Promise.all(validation.repos.map(fetchRepo));
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ results: sortResults(results) });
 }
 
 function getInput(body: unknown) {
@@ -109,6 +112,7 @@ async function fetchRepo({
     }
 
     const data = (await response.json()) as GitHubRepo;
+    const health = calculateHealth(data);
 
     return {
       ok: true,
@@ -122,6 +126,9 @@ async function fetchRepo({
       language: data.language,
       updatedAt: data.updated_at,
       pushedAt: data.pushed_at,
+      healthScore: health.score,
+      healthLabel: health.label,
+      healthNotes: health.notes,
     };
   } catch (error) {
     return {
@@ -133,6 +140,70 @@ async function fetchRepo({
           : "Could not reach GitHub. Check your connection and try again.",
     };
   }
+}
+
+function calculateHealth(repo: GitHubRepo) {
+  const pushedAt = repo.pushed_at ? new Date(repo.pushed_at).getTime() : 0;
+  const daysSincePush = pushedAt
+    ? Math.floor((Date.now() - pushedAt) / (1000 * 60 * 60 * 24))
+    : Number.POSITIVE_INFINITY;
+  const issuePressure =
+    repo.open_issues_count / Math.max(repo.stargazers_count + repo.forks_count, 1);
+
+  const activityScore =
+    daysSincePush <= 7 ? 45 : daysSincePush <= 30 ? 35 : daysSincePush <= 180 ? 22 : 8;
+  const issueScore = issuePressure <= 0.01 ? 30 : issuePressure <= 0.05 ? 20 : 8;
+  const communityScore =
+    repo.stargazers_count >= 1000 || repo.forks_count >= 100 ? 25 : repo.stargazers_count >= 50 ? 15 : 6;
+  const score = Math.min(100, activityScore + issueScore + communityScore);
+
+  return {
+    score,
+    label: score >= 80 ? "Strong" : score >= 55 ? "Healthy" : "Needs review",
+    notes: [
+      getActivityNote(daysSincePush),
+      issuePressure <= 0.05
+        ? "Issue count looks reasonable for its size."
+        : "Open issues are high compared with stars and forks.",
+      communityScore >= 15
+        ? "Community signal is visible through stars or forks."
+        : "Community signal is still small.",
+    ],
+  };
+}
+
+function getActivityNote(daysSincePush: number) {
+  if (!Number.isFinite(daysSincePush)) {
+    return "No recent push date was returned by GitHub.";
+  }
+
+  if (daysSincePush === 0) {
+    return "Code was pushed today.";
+  }
+
+  if (daysSincePush <= 30) {
+    return `Code was pushed ${daysSincePush} days ago.`;
+  }
+
+  return `Last code push was ${daysSincePush} days ago.`;
+}
+
+function sortResults(results: Array<RepoSuccess | RepoFailure>) {
+  return [...results].sort((a, b) => {
+    if (a.ok && b.ok) {
+      return b.healthScore - a.healthScore;
+    }
+
+    if (a.ok) {
+      return -1;
+    }
+
+    if (b.ok) {
+      return 1;
+    }
+
+    return a.label.localeCompare(b.label);
+  });
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number) {
